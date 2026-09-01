@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Second Brain 1.0
 
-## Getting Started
+Second Brain 1.0 adalah aplikasi web pribadi untuk menangkap, merapikan, menghubungkan, dan menemukan kembali pengetahuan. Fokus versi pertama adalah **knowledge hub**, bukan aplikasi manajemen tugas atau chatbot AI.
 
-First, run the development server:
+## Keputusan proyek
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+| Area | Keputusan |
+|---|---|
+| Target pengguna | Satu pengguna/pribadi |
+| Fokus MVP | Knowledge hub |
+| Frontend dan backend | Next.js App Router + TypeScript |
+| Database | PostgreSQL |
+| ORM | Prisma |
+| Styling | Tailwind CSS + komponen UI yang aksesibel |
+| Autentikasi | Login owner; registrasi publik tidak tersedia |
+| Format isi catatan | Markdown |
+| Deployment target | Vercel + PostgreSQL terkelola |
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Dokumen proyek
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- [SRS](docs/SRS.md): kebutuhan perangkat lunak dan acceptance criteria.
+- [Arsitektur](docs/ARCHITECTURE.md): komponen sistem, model data, dan rancangan API.
+- [Desain UI/UX](docs/UI_UX.md): navigasi, halaman, alur pengguna, dan design system awal.
+- [Roadmap](docs/ROADMAP.md): urutan pengerjaan dari nol sampai rilis.
+- [Setup dan GitHub](docs/SETUP_AND_GITHUB.md): instalasi, inisialisasi proyek, dan workflow Git.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Definisi MVP selesai
 
-## Learn More
+MVP dinyatakan selesai ketika owner dapat login, membuat catatan dari Inbox, mengedit isi Markdown, memberi tag, menghubungkan dua catatan, mencari catatan, memproses Inbox, mengarsipkan atau memulihkan catatan, dan menggunakan aplikasi secara nyaman di desktop maupun ponsel.
 
-To learn more about Next.js, take a look at the following resources:
+## Urutan kerja yang disarankan
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Baca dan setujui batas MVP pada SRS.
+2. Siapkan perangkat pengembangan mengikuti panduan setup.
+3. Inisialisasi repository dan push commit awal.
+4. Bangun database dan autentikasi.
+5. Bangun fitur notes, tags, links, search, lalu review dashboard.
+6. Tambahkan pengujian, deployment, dan dokumentasi portofolio.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Keputusan yang belum final dicatat sebagai `TBD` dan harus diselesaikan sebelum modul terkait mulai dibuat.

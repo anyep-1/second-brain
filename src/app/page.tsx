@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
 type note = {
@@ -224,23 +225,27 @@ export default function Home() {
           ) : (
             <section className = "grid gap-4 sm:grid-cols2 xl:grid-cols-3">
               {filteredNotes.map((note) => (
-                <article 
+                <Link
                   key = {note.id}
-                  className = "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  href = {`/notes/${note.id}`}
+                  className = "block cursor-pointer"
                 >
-                  <div className = "flex items-start justify-between gap-3">
-                    <h3 className = "font-semibold leading-6">{note.title}</h3>
-                    {note.isFavorite && (
-                      <span className = "text-amber-500">⭐</span>
-                    )}
-                  </div>
-                  <p className = "mt-3 max-h-20 overflow-hidden whitespace-pre-wrap text-sm leading-6 text-slate-600">
-                    {note.content || "Catatan ini belum memiliki isi."}
-                  </p>
-                  <div className = "mt-5 border-t border-slate-100 pt-4 text-xs text-slate-400">
-                    Diperbarui pada {formatDate(note.updatedAt)}
-                  </div>
-                </article>
+                    <article className = "w-full h-50 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                      <div className = "flex items-start justify-between gap-3">
+                        <h3 className = "font-semibold leading-6">{note.title}</h3>
+                        {note.isFavorite && (
+                          <span className = "text-amber-500">⭐</span>
+                        )}
+                      </div>
+                      <p className = "mt-3 max-h-20 overflow-hidden whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                        {note.content || "Catatan ini belum memiliki isi."}
+                      </p>
+                      <div className = "mt-5 border-t border-slate-100 pt-4 text-xs text-slate-400">
+                        Diperbarui pada {formatDate(note.updatedAt)}
+                      </div>
+                    </article>
+                </Link>
+                
               ))}
             </section>
           )}

@@ -1,32 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { NoteCard } from "@/components/notes/NoteCard";
+import { noteService } from "@/services/note-service";
+import { useEffect, useState } from "react";
+import type { Note } from "@/types/note";
+import { Button } from "@/components/Button";
 
-type note = {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  isFavorite: boolean;
-  isArchived: boolean;
-  updatedAt: string;
-  folder: {
-    id: string;
-    name: string;
-  } | null;
-  tags: Array<{
-    tag: {
-      id: string;
-      name: string;
-      color: string | null;
-    };
-  }>;
-};
 
 export default function Home() {
-  const [notes, setNotes] = useState<note[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [search, setSearch] = useState("");
@@ -37,19 +20,14 @@ export default function Home() {
   useEffect(() => {
     async function loadNotes() {
       try {
-        const response = await fetch("/api/notes", {
-          cache: "no-store",
-        }); 
-
-        if(!response.ok) {
-          throw new Error("Gagal mengambil catatan.");
-        }
-
-        const result = await response.json();
-        setNotes(result.data);
-      } catch (error) {
-        console.error(error);
-        setError("Catatan belum dapat dimuat.");
+        const notesData = await noteService.getAll();
+        setNotes(notesData);
+      } catch (requestError) {
+        setError(
+          requestError instanceof Error
+          ? requestError.message
+          : "Catatan belum dapat dimuat.",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -82,27 +60,14 @@ export default function Home() {
     setError("");
 
     try {
-      const response = await fetch("/api/notes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ title, content }),
+      const newNote = await noteService.create({
+        title,
+        content,
       });
-
-      const result = await response.json();
-
-      if(!response.ok) {
-        throw new Error(result.message);
-      }
-
-      const newNote: note = {
-        ...result.data,
-        folder: null,
-        tags: [],
-      };
-
-      setNotes((currentNotes) => [newNote, ...currentNotes]);
+      setNotes((currentNotes) => [
+        newNote,
+        ...currentNotes,
+      ]);
       setTitle("");
       setContent("");
 
@@ -117,13 +82,6 @@ export default function Home() {
     }
   }
 
-  function formatDate(value: string) {
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(new Date(value));
-  }
   
   return(
     <div className = "min-h-screen bg-slate-50 text-slate-900">
@@ -197,12 +155,9 @@ export default function Home() {
               <p className = "text-xs text-slate-500">
                 Tersimpan
               </p>
-              <button 
-                type = "submit" disabled = {isSaving}
-                className = "rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
+              <Button type = "submit" disabled = {isSaving}>
                 {isSaving ? "Menyimpan..." : "Simpan Catatan"}
-              </button>
+              </Button>
             </div>
           </form>
           {error && (
@@ -218,34 +173,17 @@ export default function Home() {
           ) : filteredNotes.length === 0 ? (
             <div className = "rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
               <h3 className = "font-semibold">Belum ada catatan</h3>
-              <p className = "mt-2 textg-sm text-slate-500">
+              <p className = "mt-2 text-sm text-slate-500">
                 Buat catatan pertama menggunakan form di atas.
               </p>
             </div>
           ) : (
-            <section className = "grid gap-4 sm:grid-cols2 xl:grid-cols-3">
+            <section className = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filteredNotes.map((note) => (
-                <Link
+                <NoteCard
                   key = {note.id}
-                  href = {`/notes/${note.id}`}
-                  className = "block cursor-pointer"
-                >
-                    <article className = "w-full h-50 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                      <div className = "flex items-start justify-between gap-3">
-                        <h3 className = "font-semibold leading-6">{note.title}</h3>
-                        {note.isFavorite && (
-                          <span className = "text-amber-500">⭐</span>
-                        )}
-                      </div>
-                      <p className = "mt-3 max-h-20 overflow-hidden whitespace-pre-wrap text-sm leading-6 text-slate-600">
-                        {note.content || "Catatan ini belum memiliki isi."}
-                      </p>
-                      <div className = "mt-5 border-t border-slate-100 pt-4 text-xs text-slate-400">
-                        Diperbarui pada {formatDate(note.updatedAt)}
-                      </div>
-                    </article>
-                </Link>
-                
+                  note = {note}
+                />
               ))}
             </section>
           )}

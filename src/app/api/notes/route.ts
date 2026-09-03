@@ -52,6 +52,14 @@ export async function POST(request: Request) {
             content,
             slug: `${baseSlug || "note"}-${Date.now()}`,
         },
+        include: {
+            folder: true,
+            tags: {
+                include: {
+                    tag: true,
+                },
+            },
+        },
     });
 
     return NextResponse.json(

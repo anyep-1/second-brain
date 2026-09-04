@@ -1,17 +1,13 @@
 "use client";
 
+import { noteService } from "@/services/note-service";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { Archive, ArrowLeft, Star, Trash2 } from "lucide-react";
+import { Button } from "@/components/Button";
 
-type Note = {
-    id: string;
-    title: string;
-    content: string;
-    isFavorite: boolean;
-    isArchived: boolean;
-    updatedAt: string;
-};
 
 export default function NoteEditorPage() {
     const params = useParams<{ id: string }>();
@@ -32,15 +28,7 @@ export default function NoteEditorPage() {
     useEffect(() => {
         async function loadNote() {
             try {
-                const response = await fetch(`/api/notes/${noteId}`, {
-                    cache: "no-store",
-                });
-                const result = await response.json();
-
-                if(!response.ok) {
-                    throw new Error(result.message);
-                }
-                const note: Note = result.data;
+                const note = await noteService.getById(noteId);
 
                 setTitle(note.title);
                 setContent(note.content);
@@ -64,31 +52,30 @@ export default function NoteEditorPage() {
     async function handleSave(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
+        if(!title.trim()) {
+            setError("Judul catatan wajib diisi.");
+            return;
+        }
+
         setIsSaving(true);
         setError("");
         setMessage("");
 
         try {
-            const response = await fetch(`/api/notes/${noteId}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    title,
-                    content,
-                    isFavorite,
-                    isArchived,
-                }),
-            });
-
-            const result = await response.json();
-
-            if(!response.ok) {
-                throw new Error(result.message);
-            }
+           const updatedNote = await noteService.update(noteId, {
+            title: title.trim(),
+            content,
+            isFavorite,
+            isArchived,
+           },
+        );
+            setTitle(updatedNote.title);
+            setContent(updatedNote.content);
+            setIsFavorite(updatedNote.isFavorite);
+            setIsArchived(updatedNote.isArchived);
 
             setMessage("Catatan berhasil disimpan.");
+            router.refresh();
         } catch (requestError) {
             setError(
                 requestError instanceof Error
@@ -113,15 +100,7 @@ export default function NoteEditorPage() {
         setError("");
 
         try {
-            const response = await fetch(`/api/notes/${noteId}`, {
-                method: "DELETE",
-            });
-
-            const result = await response.json();
-
-            if(!response.ok) {
-                throw new Error(result.message);
-            }
+            await noteService.delete(noteId);
 
             router.push("/");
             router.refresh();
@@ -139,89 +118,139 @@ export default function NoteEditorPage() {
 
     if(isLoading) {
         return (
-            <main className = "min-h-screen bg-slate-50 p-10">
-                <p className = "text-sm text-slate-500">Memuat catatan...</p>
+            <main className = "min-h-screen bg-page px-5 py-10 text-ink">
+                <div className = "mx-auto max-w-4xl">
+                    <p className = "text-sm text-muted">Memuat catatan...</p>
+                </div>
             </main>
         );
     }
 
+    if(error && !title) {
+        return (
+            <main className = "min-h-screen bg-page px-5 py-10 text-ink">
+                <div className = "mx-auto max-w-4xl">
+                    <div className = "rounded-2xl border border-red-200 bg-red-50 p-6">
+                        <p className = "text-sm text-red-700">{error}</p>
+                        <Link
+                            href = "/"
+                            className = "mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary-hover"
+                        >
+                            <ArrowLeft
+                                aria-hidden = "true"
+                                className = "size-4"
+                            />
+                            Kembali ke dashboard
+                        </Link>
+                    </div>
+                </div>
+            </main>
+        )
+    }
+
     return (
-        <main className = "min-h-screen bg-slate-50 px-5 py-8 text-slate-900">
+        <main className = "min-h-screen bg-page px-5 py-6 text-ink md:px-8 md:py-10">
             <div className = "mx-auto max-w-4xl">
-                <header className = "mb-6 flex items-center justify-between">
+                <header className = "mb-6 flex flex-wrap items-center justify-between gap-4">
                     <Link
-                        href = {"/"}
-                        className = "text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                        href = "/"
+                        className = "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-muted transition hover:bg-soft hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus"
                     >
-                        ← Kembali ke semua catatan
+                        <ArrowLeft
+                            aria-hidden = "true"
+                            className = "size-4"
+                        />
+                        Kembali ke semua catatan
                     </Link>
-                    <button
-                        type = "submit"
+                    <Button
+                        variant = "danger"
                         onClick = {handleDelete}
-                        disabled = {isDeleting}
-                        className = "rounded-xl px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50" 
+                        disabled = {isDeleting || isSaving} 
                     >
+                        <Trash2
+                            aria-hidden = "true"
+                            className = "size-4"
+                        />
                         {isDeleting ? "Menghapus..." : "Hapus"}
-                    </button>
+                    </Button>
                 </header>
                 <form
                     onSubmit = {handleSave}
-                    className = "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10"
+                    className = "overflow-hidden rounded-3xl border border-line bg-panel shadow-[0_20px_60px_rgba(84,48,36,0.08)]"
                 >
-                    <input
-                        value = {title}
-                        onChange = {(event) => setTitle(event.target.value)}
-                        placeholder = "Judul catatan"
-                        className = "w-full border-none text-3xl font-bold tracking-tight outline-none placeholder:text-slate-300"
-                    />
-                    <div className = "mt-6 flex flex-wrap gap-3 border-y border-slate-100 py-4">
-                        <button
-                            type = "button"
-                            onClick = {() => setIsFavorite((current) => !current)}
-                            className = {`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                               isFavorite
-                               ? "bg-amber-100 text-amber-700"
-                               : "bg-slate-100 text-slate-600"
-                            }`}
-                        >
-                            {isFavorite ? "★ Favorit" : "☆ Jadikan Favorit"}
-                        </button>
-                        <button
-                            type = "button"
-                            onClick = {() => setIsArchived((current) => !current)}
-                            className = {`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                               isArchived
-                               ? "bg-slate-800 text-white"
-                               : "bg-slate-100 text-slate-600"
-                            }`}
-                        >
-                            {isArchived ? "Diarsipkan" : "Arsipkan"}
-                        </button>
+                    <div className = "border-b border-line px-6 py-6 md:px-10 md:py-8">
+                        <p className = "text-xs font-bold tracking-[0.14em] text-primary uppercase">Note Editor</p>
+                        <input
+                            value = {title}
+                            onChange = {(event) => {setTitle(event.target.value); setMessage("")}}
+                            placeholder = "Judul catatan"
+                            className = "mt-3 w-full border-none bg-transparent text-3xl font-bold tracking-tight text-ink outline-none placeholder:text-muted/50 md:text-4xl"
+                        />
                     </div>
-                    <textarea
-                        value = {content}
-                        onChange = {(event) => setContent(event.target.value)}
-                        placeholder = "Mulai menulis..."
-                        className = "mt-6 min-h-105 w-full resize-y border-none text-base leading-8 outline-none placeholder:text-slate-300"
-                    />
-                    {error && (
-                        <div className = "mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {error}
-                        </div>
-                    )}
-                    {message && (
-                        <div className = "mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                            {message}
-                        </div>
-                    )}
-                    <div className = "mt-6 flex justify-end border-t border-slate-100 pt-6">
-                        <button
-                            type = "submit"
-                            disabled = {isSaving}
-                            className = "rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                    <div className = "flex flex-wrap gap-3 border-b border-line bg-page/50 px-6 py-4 md:px-10">
+                        <Button
+                            variant = "secondary"
+                            size = "sm"
+                            onClick = {() => {setIsFavorite((current) => !current); setMessage("");}}
+                            className = {isFavorite
+                               ? "border-amber-300 bg-amber-50 text-amber-700"
+                               : undefined
+                            }
                         >
-                            {isSaving ? "Menyimpan..." : "Simpan perubahan"}
-                        </button>
+                            <Star
+                                aria-hidden = "true"
+                                className = {`size-4 ${isFavorite ? "fill-current" : "" }`}
+                            />
+                            {isFavorite ? "Favorit" : "Jadikan Favorit"}
+                        </Button>
+                        <Button
+                            variant = "secondary"
+                            size = "sm"
+                            onClick = {() => {setIsArchived((current) => !current); setMessage("");}}
+                            className = {isArchived
+                               ? "border-primary bg-soft text-primary"
+                               : undefined
+                            }
+                        >
+                            <Archive
+                                aria-hidden = "true"
+                                className = "size-4"
+                            />
+                            {isArchived ? "Diarsipkan" : "Arsipkan"}
+                        </Button>
+                    </div>
+                    <div className = "px-6 py-6 md:px-10 md:py-10">
+                        <textarea
+                            value = {content}
+                            onChange = {(event) => {setContent(event.target.value); setMessage("");}}
+                            placeholder = "Mulai menulis..."
+                            className = "block min-h-105 w-full resize-y rounded-2xl border border-line bg-page/40 px-4 py-3 text-base leading-8 text-ink outline-none transition placeholder:text-muted/50 focus:border-accent focus:bg-panel focus:ring-4 focus:ring-focus"
+                        />
+                        {error && (
+                            <div
+                                role = "alert"
+                                className = "mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+                            >
+                                {error}
+                            </div>
+                        )}
+                        {message && (
+                            <div
+                                role = "status" 
+                                className = "mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                            >
+                                {message}
+                            </div>
+                        )}
+                        <footer className = "flex flex-col gap-4 border-t border-line bg-page/50 px-6 py-5 sm:flex-row  sm:items-center sm:justify-between md:py-10">
+                            <p className = "text-xs text-muted">Perubahan disimpan setelah tombol ditekan</p>
+                            <Button
+                                type = "submit"
+                                disabled = {isSaving || isDeleting}
+                            >
+                                {isSaving ? "Menyimpan..." : "Simpan perubahan"}
+                            </Button>
+                        </footer>
                     </div>
                 </form>
             </div>

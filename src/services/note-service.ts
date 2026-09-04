@@ -14,7 +14,7 @@ export const noteService = {
         return response.data;
     },
     async getById(id: string) {
-        const response = await apiClient.get<DataResponse<Note[]>>(
+        const response = await apiClient.get<DataResponse<Note>>(
             `${NOTES_ENDPOINT}/${id}`,
             {
                 cache: "no-store",

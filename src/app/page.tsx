@@ -6,14 +6,19 @@ import { noteService } from "@/services/note-service";
 import { useEffect, useState } from "react";
 import type { Note } from "@/types/note";
 import { Button } from "@/components/Button";
+import { AppShell } from "@/components/layout/AppShell";
+import { Search } from "lucide-react";
+import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
+import { SidebarView } from "@/components/layout/Sidebar";
 
 
 export default function Home() {
+  const [activeView, setActiveView] = useState<SidebarView>("dashboard");
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -37,16 +42,31 @@ export default function Home() {
 
   const filteredNotes = notes.filter((note) => {
     const keyword = search.toLowerCase().trim();
+    const matchesView = activeView === "archived"
+                        ? note.isArchived
+                        : activeView === "favorites"
+                          ? note.isFavorite && !note.isArchived
+                          : !note.isArchived;
 
-    if (!keyword) {
-      return true;
-    }
+    const matchesSearch = !keyword || note.title.toLowerCase().includes(keyword) || note.content.toLowerCase().includes(keyword);
 
-    return (
-      note.title.toLowerCase().includes(keyword) ||
-      note.content.toLowerCase().includes(keyword)
-    );
+    return matchesView && matchesSearch;
   });
+
+  const favoriteNotesCount = notes.filter((note) => note.isFavorite,).length;
+  const archivedNotesCount = notes.filter((note) => note.isArchived,).length
+
+  async function handleViewChange(view: SidebarView) {
+    setActiveView(view);
+
+    window.setTimeout(() => {
+      const elementId = view === "dashboard" ? "dashboard-top" : "notes";
+      document.getElementById(elementId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,113 +102,161 @@ export default function Home() {
     }
   }
 
+  const noteSectionContent: Record<SidebarView, {title: string; emptyMessage: string;}> = {
+    dashboard: {
+      title: "Catatan terbaru",
+      emptyMessage: "Belum ada catatan terbaru",
+    },
+    all: {
+      title: "Semua catatan",
+      emptyMessage: "Belum ada catatan yang tersimpan",
+    },
+    favorites: {
+      title: "Catatan favorit",
+      emptyMessage: "Belum ada catatan yang dijadikan favorit"
+    },
+    archived: {
+      title: "Catatan diarsipkan",
+      emptyMessage: "Belum ada catatan yang diarsipkan",
+    },
+  };
+
+  const currentSection = noteSectionContent[activeView];
+
   
-  return(
-    <div className = "min-h-screen bg-slate-50 text-slate-900">
-      <div className = "mx-auto flex min-h-screen max-w-7xl">
-        <aside className = "hidden w-64 border-r border-slate-200 bg-white p-6 md:block">
-          <div className = "mb-10">
-            <p className = "text-xs font-semibold uppercase tracking-[0.25cm] text-indigo-600">
-              Personal space
-            </p>
-            <h1 className = "mt-2 text-2xl font-bold">Second Brain</h1>
-          </div>
-          <nav className = "space-y-2 text-sm" >
-            <button className = "w-full rounded-xl px-4 py-2 text-left font-semibold text-indigo-700">
-              Semua catatan
-            </button>
-            <button className = "w-full rounded-xl px-4 py-2 text-left text-slate-600 hover:bg-slate-100">
-              Favorit
-            </button>
-            <button className = "w-full rounded-xl px-4 py-2 text-left text-slate-600 hover:bg-slate-100">
-              Arsip
-            </button>
-          </nav>
-          <div className = "mt-10 border-t border-slate-200 pt-6">
-            <p className = "text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Ringkasan
-            </p>
-            <p className = "mt-3 text-sm text-slate-600">
-              {notes.length} catatan tersimpan
-            </p>
-          </div>
-        </aside>
-        <main className = "flex-1 p-5 md:p-10">
-          <header className = "mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+  return (
+    <AppShell
+      activeView = {activeView} 
+      notesCount = {notes.length}
+      onViewChange = {handleViewChange}
+    >
+      <div id = "dashboard-top" className = "p-5 md:p-8 lg:p-10">
+        <header className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className = "text-sm font-medium text-indigo-600">
-                Knowledge Workspace
+              <p className="text-sm font-semibold text-primary">
+                Workspace Overview
               </p>
-              <h2 className = "mt-1 text-3xl font-bold tracking-tight">
-                Semua Catatan
-              </h2>
-              <p className = "mt-2 text-sm text-slate-500">
-                Tangkap ide dan pengetahuan sebelum terlupakan.
+              <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink md:text-4xl">
+                Dashboard
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                Kelola ide dan pengetahuanmu dalam satu tempat.
               </p>
             </div>
-            <input
-              type ="search"
-              value = {search}
-              onChange = {(event) => setSearch(event.target.value)}
-              placeholder = "Cari catatan..."
-              className = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-indigo-100 lg:max-w-sm"
-            />
+            <div className = "relative w-full lg:max-w-sm">
+              <Search
+                aria-hidden = "true"
+                className = "pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted"
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Cari catatan..."
+                className="
+                  w-full rounded-xl border border-line bg-panel
+                  pr-4 py-3 pl-11 text-sm text-ink outline-none transition
+                  placeholder:text-muted
+                  focus:border-accent focus:ring-4 focus:ring-focus
+                "
+              />
+            </div>
           </header>
-          <form 
+          <DashboardOverview
+            totalNotes = {notes.length}
+            favoriteNotes = {favoriteNotesCount}
+            archivedNotes = {archivedNotesCount}
+          />
+          <div className = "mb-4">
+            <p className = "text-xs font-bold tracking-[0.14em] text-primary uppercase">Quick Capture</p>
+            <h2 className = "mt-1 text-xl font-bold text-ink">Catatan baru</h2>
+          </div>
+          <form
+            id = "quick-capture"
             onSubmit={handleSubmit}
-            className = "mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            className="mb-8 rounded-2xl border border-line bg-panel p-6 shadow-sm"
           >
             <input
-              value = {title}
-              onChange = {(event) => setTitle(event.target.value)}
-              placeholder = "Judul catatan"
-              className = "w-full border-none text-lg font-semibold outline-none placeholder:text-slate-400"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Judul catatan"
+              className="
+                w-full border-none bg-transparent text-lg font-semibold
+                text-ink outline-none placeholder:text-muted
+              "
             />
+
             <textarea
-              value = {content}
-              onChange = {(event) => setContent(event.target.value)}
-              placeholder = "Tuliskan ide atau pengetahuanmu..."
-              rows = {4}
-              className = "mt-4 w-full resize-none border-none text-sm leading-6 outline-none placeholder:text-slate-400"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="Tuliskan ide atau pengetahuanmu..."
+              rows={4}
+              className="
+                mt-4 w-full resize-none border-none bg-transparent
+                text-sm leading-6 text-ink outline-none
+                placeholder:text-muted
+              "
             />
-            <div className = "mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-              <p className = "text-xs text-slate-500">
-                Tersimpan
+            <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
+              <p className="text-xs text-muted">
+                Tersimpan di Second Brain
               </p>
-              <Button type = "submit" disabled = {isSaving}>
+
+              <Button
+                type="submit"
+                disabled={isSaving}
+              >
                 {isSaving ? "Menyimpan..." : "Simpan Catatan"}
               </Button>
             </div>
           </form>
           {error && (
-            <div className = "mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
-
-          {isLoading ? (
-            <p className = "text-sm text-slate-500">
-              Memuat catatan...
-            </p>
-          ) : filteredNotes.length === 0 ? (
-            <div className = "rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-              <h3 className = "font-semibold">Belum ada catatan</h3>
-              <p className = "mt-2 text-sm text-slate-500">
-                Buat catatan pertama menggunakan form di atas.
-              </p>
+          <section 
+            id = "notes"
+            aria-label = "Daftar catatan"
+          >
+            <div className = "mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className = "text-xs font-bold tracking-[0.14em] text-primary uppercase">Knowledge</p>
+                <h2
+                  id = "notes-heading"
+                  className = "mt-1 text-xl font-bold text-ink"
+                >
+                  {currentSection.title}
+                </h2>
+              </div>
+              <p className = "text-xs text-muted">{filteredNotes.length} catatan ditampilkan</p>
             </div>
-          ) : (
-            <section className = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredNotes.map((note) => (
-                <NoteCard
-                  key = {note.id}
-                  note = {note}
-                />
-              ))}
-            </section>
-          )}
-        </main>
+            {isLoading ? (
+              <p className="text-sm text-muted">
+                Memuat catatan...
+              </p>
+            ) : filteredNotes.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-line bg-panel p-10 text-center">
+                <h3 className="font-semibold text-ink">
+                  Belum ada catatan
+                </h3>
+
+                <p className="mt-2 text-sm text-muted">
+                  {currentSection.emptyMessage}
+                </p>
+              </div>
+            ) : (
+              <div className = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredNotes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
       </div>
-    </div>
-  );
+    </AppShell>
+);
 }

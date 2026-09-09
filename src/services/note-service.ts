@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api-client";
-import { CreateNoteInput, DataResponse, MessageResponse, Note, UpdateNoteInput } from "@/types/note";
+import { CreateNoteInput,  Note, UpdateNoteInput } from "@/types/note";
+import { DataResponse, MessageResponse } from "@/types/api";
 
 const NOTES_ENDPOINT = "/api/notes";
 

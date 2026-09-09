@@ -10,10 +10,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Search } from "lucide-react";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { SidebarView } from "@/components/layout/Sidebar";
+import { TasksPanel } from "@/components/tasks/TaskPanel";
+import { Task } from "@/types/task";
 
 
 export default function Home() {
   const [activeView, setActiveView] = useState<SidebarView>("dashboard");
+  const [highlightedTask, setHighlightedTask] = useState<Task | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -166,6 +169,10 @@ export default function Home() {
             totalNotes = {notes.length}
             favoriteNotes = {favoriteNotesCount}
             archivedNotes = {archivedNotesCount}
+            highlightedTask= {highlightedTask}
+          />
+          <TasksPanel 
+            onHighlightedTaskChange = {setHighlightedTask}
           />
           <div className = "mb-4">
             <p className = "text-xs font-bold tracking-[0.14em] text-primary uppercase">Quick Capture</p>

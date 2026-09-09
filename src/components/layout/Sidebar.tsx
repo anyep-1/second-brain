@@ -145,9 +145,10 @@ export function Sidebar({notesCount, activeView, className, onNavigate, onViewCh
                     <p className = "mb-2 px-3 text-[11px] font-bold tracking-[0.14em] text-muted uppercase">Productivity</p>
                     <div className = "space-y-1">
                         <SidebarItem
-                            label = "Task"
+                            label = "Tasks"
                             icon = {CheckSquare}
-                            comingSoon
+                            href = "#tasks"
+                            onNavigate = {onNavigate}
                         />
                         <SidebarItem
                             label = "Projects"

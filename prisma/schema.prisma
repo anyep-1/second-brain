@@ -88,3 +88,20 @@ model NoteLink {
   @@id([sourceNoteId, targetNoteId])
   @@index([targetNoteId])
 }
+
+model Task {
+  id            String    @id @default(cuid())
+  title         String
+  description   String    @default("")
+  dueDate       DateTime?
+  priority      String    @default("MEDIUM")
+  isCompleted   Boolean   @default(false)
+  isHighlighted Boolean   @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([dueDate])
+  @@index([isCompleted])
+  @@index([isHighlighted])
+}

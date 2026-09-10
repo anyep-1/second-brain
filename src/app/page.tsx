@@ -12,15 +12,19 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { SidebarView } from "@/components/layout/Sidebar";
 import { TasksPanel } from "@/components/tasks/TaskPanel";
 import { Task } from "@/types/task";
+import { ProjectsPanel } from "@/components/projects/ProjectsPanel";
+import { Project } from "@/types/project";
 
 
 export default function Home() {
+  const [projectsRefreshKey, setProjectsRefreshKey] = useState(0);
   const [activeView, setActiveView] = useState<SidebarView>("dashboard");
   const [highlightedTask, setHighlightedTask] = useState<Task | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [search, setSearch] = useState("");
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -126,6 +130,10 @@ export default function Home() {
 
   const currentSection = noteSectionContent[activeView];
 
+  function refreshProjectProgress() {
+    setProjectsRefreshKey((current) => current + 1);
+  }
+
   
   return (
     <AppShell
@@ -171,8 +179,14 @@ export default function Home() {
             archivedNotes = {archivedNotesCount}
             highlightedTask= {highlightedTask}
           />
-          <TasksPanel 
+          <TasksPanel
+            projects = {projects} 
             onHighlightedTaskChange = {setHighlightedTask}
+            onProjectProgressChange = {refreshProjectProgress}
+          />
+          <ProjectsPanel
+            refreshKey = {projectsRefreshKey} 
+            onProjectsChange ={setProjects}
           />
           <div className = "mb-4">
             <p className = "text-xs font-bold tracking-[0.14em] text-primary uppercase">Quick Capture</p>

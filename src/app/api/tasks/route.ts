@@ -14,9 +14,19 @@ function isTaskPriority(value: unknown): value is TaskPriority{
     );
 }
 
+const projectSelection = {
+    select: {
+        id: true,
+        name: true,
+    },
+};
+
 export async function GET() {
     try {
         const tasks = await prisma.task.findMany({
+            include: {
+                project: projectSelection,
+            },
             orderBy: [
                 {
                     isCompleted: "asc",
@@ -46,6 +56,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body: unknown = await request.json();
+
         if(typeof body !== "object" || body === null) {
             return NextResponse.json(
                 {
@@ -95,12 +106,64 @@ export async function POST(request: Request) {
                 );
             }
         }
+
+        let projectId: string | null = null;
+
+        if(input.projectId !== undefined && input.projectId !== null && input.projectId !== "") {
+            if(typeof input.projectId !== "string") {
+                return NextResponse.json(
+                    {
+                        message: "Project task tidak valid.",
+                    },
+                    {
+                        status: 400,
+                    },
+                );
+            }
+            projectId = input.projectId.trim();
+            const project = await prisma.project.findUnique({
+                where: {
+                    id: projectId,
+                },
+                select: {
+                    id: true,
+                    isArchived: true,
+                },
+            });
+
+            if(!project) {
+                return NextResponse.json(
+                    {
+                        message: "Project tidak ditemukan.",
+                    },
+                    {
+                        status: 400,
+                    },
+                );
+            }
+
+            if(project.isArchived) {
+                return NextResponse.json(
+                    {
+                        message: "Task tidak dapat ditambahkan ke project yang diarsipkan.",
+                    },
+                    {
+                        status: 400,
+                    },
+                );
+            }
+        }
+
         const task = await prisma.task.create({
             data: {
                 title,
                 description,
                 dueDate,
                 priority,
+                projectId,
+            },
+            include: {
+                project: projectSelection,
             },
         });
 

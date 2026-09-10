@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { TaskItem } from "./TaskItem";
 import { taskService } from "@/services/task-service";
 import { Button } from "../Button";
+import { Project } from "@/types/project";
 
 type TaskGroupProps = {
     title: string;
@@ -17,7 +18,9 @@ type TaskGroupProps = {
 };
 
 type TaskPanelProps = {
+    projects: Project[];
     onHighlightedTaskChange: (task: Task | null) => void;
+    onProjectProgressChange: () => void;
 }
 
 function TaskGroup({title, tasks, busyTaskId, onToggleCompletion, onToggleHighlight, onDelete}: TaskGroupProps) {
@@ -111,11 +114,12 @@ function groupTasks(tasks: Task[]) {
     return {overdue, todayTask, tomorrowTask, nextSevenDays, otherTasks};
 }
 
-export function TasksPanel({onHighlightedTaskChange}:TaskPanelProps) {
+export function TasksPanel({projects, onHighlightedTaskChange, onProjectProgressChange}:TaskPanelProps) {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState(getTodayInputValue);
     const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
+    const [projectId, setProjectId] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
@@ -160,13 +164,20 @@ export function TasksPanel({onHighlightedTaskChange}:TaskPanelProps) {
             const task = await taskService.create({
                 title: title.trim(), 
                 description: "",  
-                dueDate: dueDate, 
+                dueDate: dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : null, 
                 priority,
+                projectId: projectId || null,
             });
             setTasks((current) => [task, ...current]);
+
+            if(task.projectId) {
+                onProjectProgressChange();
+            }
+
             setTitle("");
             setDueDate(getTodayInputValue());
             setPriority("MEDIUM");
+            setProjectId("");
         } catch (requestError) {
             setError(requestError instanceof Error
                 ? requestError.message
@@ -192,6 +203,11 @@ export function TasksPanel({onHighlightedTaskChange}:TaskPanelProps) {
             setTasks((current) => 
                 current.map((item) => 
                     item.id === updatedTask.id ? updatedTask : item,));
+
+            if(updatedTask.projectId) {
+                onProjectProgressChange();
+            }
+
         } catch (requestError) {
             setError(requestError instanceof Error
                 ? requestError.message
@@ -247,6 +263,10 @@ export function TasksPanel({onHighlightedTaskChange}:TaskPanelProps) {
             setTasks((current) => 
                 current.filter((item) => item.id !== task.id),
             );
+
+            if(task.projectId) {
+                onProjectProgressChange();
+            }
         } catch (requestError) {
             setError(requestError instanceof Error
                 ? requestError.message
@@ -280,7 +300,7 @@ export function TasksPanel({onHighlightedTaskChange}:TaskPanelProps) {
             </div>
             <form
                 onSubmit = {handleCreateTask}
-                className = "mb-4 grid gap-3 rounded-2xl border border-line bg-panel p-4 shadow-sm md:grid-cols-[1fr_auto_auto_auto]"
+                className = "mb-4 grid gap-3 rounded-2xl border border-line bg-panel p-4 shadow-sm lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]"
             >
                 <input
                     value = {title}
@@ -302,6 +322,23 @@ export function TasksPanel({onHighlightedTaskChange}:TaskPanelProps) {
                     <option value = "LOW">Rendah</option>
                     <option value = "MEDIUM">Sedang</option>
                     <option value = "HIGH">Tinggi</option>
+                </select>
+                <select
+                    value = {projectId}
+                    onChange = {(event) => setProjectId(event.target.value)}
+                    className = "rounded-xl border border-line bg-page/50 px-3 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-4 focus:ring-focus"
+                >
+                    <option value = "">Tanpa project</option>
+                    {projects.filter((project) => !project.isArchived).
+                        map((project) => (
+                            <option
+                                key = {project.id}
+                                value = {project.id}
+                            >
+                                {project.name}
+                            </option>
+                        ))
+                    }
                 </select>
                 <Button
                     type = "submit"

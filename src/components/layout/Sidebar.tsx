@@ -153,7 +153,8 @@ export function Sidebar({notesCount, activeView, className, onNavigate, onViewCh
                         <SidebarItem
                             label = "Projects"
                             icon = {FolderKanban}
-                            comingSoon
+                            href = "#projects"
+                            onNavigate = {onNavigate}
                         />
                         <SidebarItem
                             label = "Areas"

@@ -6,21 +6,18 @@ type RouteContext = {
     params: Promise<{id: string;}>;
 };
 
-type TaskUpdateData = {
-    title?: string;
-    description?: string;
-    dueDate?: Date | null;
-    priority?: TaskPriority;
-    isCompleted?: boolean;
-    completedAt?: Date | null;
-    isHighlighted?: boolean;
-};
-
 const TASK_PRIORITIES: TaskPriority[] = [
     "LOW",
     "MEDIUM",
     "HIGH",
 ];
+
+const projectSelection = {
+    select: {
+        id: true,
+        name: true,
+    },
+};
 
 function isTaskPriority(value: unknown,): value is TaskPriority {
     return (
@@ -28,12 +25,27 @@ function isTaskPriority(value: unknown,): value is TaskPriority {
     );
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+function badRequest(message: string) {
+    return NextResponse.json(
+        {
+            message,
+        },
+        {
+            status: 400,
+        },
+    );
+}
+
+export async function GET(request: Request, context: RouteContext) {
+    void request;
     try {
         const { id } = await context.params;
         const task = await prisma.task.findUnique({
             where: {
                 id,
+            },
+            include: {
+                project: projectSelection,
             },
         });
 
@@ -50,11 +62,11 @@ export async function GET(_request: Request, context: RouteContext) {
 
         return NextResponse.json({data: task});
     } catch (error) {
-        console.error("GET /api/tasks error : ", error);
+        console.error("GET /api/tasks/[id] error : ", error);
 
         return NextResponse.json(
             {
-                message: "Task gagal dimuat.",
+                message: "Task belum dapat dimuat.",
             },
             {
                 status: 500,
@@ -66,19 +78,6 @@ export async function GET(_request: Request, context: RouteContext) {
 export async function PATCH(request: Request, context: RouteContext) {
     try {
         const { id } = await context.params;
-        const body: unknown = await request.json();
-
-        if(typeof body !== "object" || body ===null) {
-            return NextResponse.json(
-                {
-                    message: "Data task tidak valid.",
-                },
-                {
-                    status: 400,
-                },
-            );
-        }
-
         const existingTask = await prisma.task.findUnique({
             where: {
                 id,
@@ -96,142 +95,145 @@ export async function PATCH(request: Request, context: RouteContext) {
             );
         }
 
+        const body: unknown = await request.json();
+
+        if(typeof body !== "object" || body ===null) {
+            return badRequest("Data task tidak valid.");
+        }
+
         const input = body as Record<string, unknown>;
-        const data: TaskUpdateData = {};
+        const updatedData: {
+            title?: string;
+            description?: string;
+            dueDate?: Date | null;
+            priority?: TaskPriority;
+            isCompleted?: boolean;
+            completedAt?: Date | null;
+            isHighlighted?: boolean;
+            projectId?: string | null;
+        } = {};
 
         if("title" in input) {
             if(typeof input.title !== "string" || !input.title.trim()) {
-                return NextResponse.json(
-                    {
-                        message: "Judul task wajib diisi.",
-                    },
-                    {
-                        status: 400,
-                    },
-                );
+                return badRequest("Judul task tidak valid.");
             }
-            data.title = input.title.trim();
+            const title = input.title.trim();
+
+            if(!title) {
+                return badRequest("Judul task wajib diisi.");
+            }
+
+            updatedData.title = title;
         }
 
         if("description" in input) {
             if(typeof input.description !== "string") {
-                return NextResponse.json(
-                    {
-                        message: "Deskripsi task tidak valid.",
-                    },
-                    {
-                        status: 400,
-                    },
-                );
+                return badRequest("Deskripsi task tidak valid.")
             }
-            data.description = input.description.trim();
+            updatedData.description = input.description.trim();
         }
 
         if("priority" in input) {
             if(!isTaskPriority(input.priority)) {
-                return NextResponse.json(
-                    {
-                        message: "Prioritas task tidak valid.",
-                    },
-                    {
-                        status: 400,
-                    },
-                );
+                return badRequest("Prioritas task tidak valid.");
             }
-            data.priority = input.priority;
+            updatedData.priority = input.priority;
         }
 
         if("dueDate" in input) {
             if(input.dueDate === null || input.dueDate === ""){
-                data.dueDate = null;
+                updatedData.dueDate = null;
             } else if (typeof input.dueDate === "string") {
                 const dueDate = new Date(input.dueDate);
 
                 if(Number.isNaN(dueDate.getTime())) {
-                    return NextResponse.json(
-                        {
-                            message: "Tanggal task tidak valid.",
-                        },
-                        {
-                            status: 400.
-                        },
-                    );
+                    return badRequest("Tanggal task tidak valid.");
                 }
-                data.dueDate = dueDate;
+                updatedData.dueDate = dueDate;
             } else {
-                return NextResponse.json(
-                    {
-                        message: "Tanggal task tidak valid.",
+                return badRequest("Tanggal task tidak valid.");
+            }
+        }
+
+        if("projectId" in input) {
+            if(input.projectId === null || input.projectId === ""){
+                updatedData.projectId = null;
+            } else if(typeof input.projectId === "string") {
+                const projectId = input.projectId.trim();
+                const project = await prisma.project.findUnique({
+                    where: {
+                        id: projectId,
                     },
-                    {
-                        status: 400,
+                    select: {
+                        id: true,
+                        isArchived: true,
                     },
-                );
+                });
+
+                if(!project) {
+                    return badRequest("Project tidak ditemukan.");
+                }
+
+                if(project.isArchived) {
+                    return badRequest("Task tidak dapat dipindahkan ke project yang diarsipkan.");
+                }
+                updatedData.projectId = projectId;
+            } else {
+                return badRequest("Project task tidak valid.");
             }
         }
 
         if("isCompleted" in input) {
             if(typeof input.isCompleted !== "boolean") {
-                return NextResponse.json(
-                    {
-                        message: "Status task tidak valid.",
-                    },
-                    {
-                        status: 400,
-                    },
-                );
+                return badRequest("Status task tidak valid.");
             }
-            data.isCompleted = input.isCompleted;
-            data.completedAt = input.isCompleted ? new Date() : null;
+            updatedData.isCompleted = input.isCompleted;
+            updatedData.completedAt = input.isCompleted ? existingTask.completedAt ?? new Date() : null;
+
+            if(input.isCompleted) {
+                updatedData.isHighlighted = false;
+            }
         }
 
         if("isHighlighted" in input) {
             if(typeof input.isHighlighted !== "boolean") {
-                return NextResponse.json(
-                    {
-                        message: "Status highlight tidak valid.",
-                    },
-                    {
-                        status: 400,
-                    },
-                );
+                return badRequest("Status highlight tidak valid.");
             }
-            data.isHighlighted = input.isHighlighted;
+            const willBeCompleted = updatedData.isCompleted ?? existingTask.isCompleted;
+
+            if(input.isHighlighted && willBeCompleted) {
+                return badRequest("Task yang selesai tidak dapat dijadikan Daily Highlight.");
+            }
+            updatedData.isHighlighted = input.isHighlighted;
         }
 
-        if(Object.keys(data).length === 0) {
-            return NextResponse.json(
-                {
-                    message: "Tidak ada perubahan yang dikirim.",
-                },
-                {
-                    status: 400,
-                },
-            );
+        if(Object.keys(updatedData).length === 0) {
+            return badRequest("Tidak ada perubahan yang diberikan.");
         }
 
-        const task = await prisma.$transaction(
-            async (transaction) => {
-                if(data.isHighlighted === true) {
-                    await transaction.task.updateMany({
-                        where: {
-                            id: {
-                                not: id,
-                            },
-                        },
-                        data: {
-                            isHighlighted: false,
-                        },
-                    });
-                }
-                return transaction.task.update({
-                    where: {
-                        id,
+        if(updatedData.isHighlighted === true) {
+            await prisma.task.updateMany({
+                where: {
+                    id: {
+                        not: id,
                     },
-                    data,
-                });
+                    isHighlighted: true,
+                },
+                data: {
+                    isHighlighted: false,
+                },
+            });
+        }
+        
+        const task = await prisma.task.update({
+            where: {
+                id,
             },
-        );
+            data: updatedData,
+            include: {
+                project: projectSelection,
+            },
+        });
 
         return NextResponse.json({data: task});
     } catch (error) {

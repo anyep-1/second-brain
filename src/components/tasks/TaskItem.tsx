@@ -1,7 +1,7 @@
 "use client";
 
 import { Task, TaskPriority } from "@/types/task";
-import { CalendarDays, Check, Star, Trash2 } from "lucide-react";
+import { CalendarDays, Check, FolderKanban, Star, Trash2 } from "lucide-react";
 
 type TaskItemProps = {
     task: Task;
@@ -61,6 +61,15 @@ export function TaskItem({task, isBusy, onToggleCompletion, onToggleHighlight, o
                 </p>
                 {task.description && (
                     <p className = "mt-1 text-xs leading-5 text-muted">{task.description}</p>
+                )}
+                {task.project && (
+                    <span className = "inline-flex items-center gap-1.5 rounded-full bg-soft px-2.5 py-1 text-xs font-semibold text-primary">
+                        <FolderKanban 
+                            aria-hidden = "true"
+                            className = "size-3.5"
+                        />
+                        {task.project.name}
+                    </span>
                 )}
                 <div className = "mt-2 flex flex-wrap items-center gap-2">
                     <span className = "inline-flex items-center gap-1 text-xs text-muted">

@@ -14,10 +14,13 @@ import { TasksPanel } from "@/components/tasks/TaskPanel";
 import { Task } from "@/types/task";
 import { ProjectsPanel } from "@/components/projects/ProjectsPanel";
 import { Project } from "@/types/project";
+import { AreasPanel } from "@/components/areas/AreasPanel";
+import { Area } from "@/types/area";
 
 
 export default function Home() {
   const [projectsRefreshKey, setProjectsRefreshKey] = useState(0);
+  const [areasRefreshKey, setAreasRefreshKey] = useState(0);
   const [activeView, setActiveView] = useState<SidebarView>("dashboard");
   const [highlightedTask, setHighlightedTask] = useState<Task | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -25,6 +28,7 @@ export default function Home() {
   const [content, setContent] = useState("");
   const [search, setSearch] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -134,6 +138,10 @@ export default function Home() {
     setProjectsRefreshKey((current) => current + 1);
   }
 
+  function refrehsAreaSummary() {
+    setAreasRefreshKey((current) => current + 1);
+  }
+
   
   return (
     <AppShell
@@ -185,8 +193,14 @@ export default function Home() {
             onProjectProgressChange = {refreshProjectProgress}
           />
           <ProjectsPanel
-            refreshKey = {projectsRefreshKey} 
+            refreshKey = {projectsRefreshKey}
+            areas = {areas}
             onProjectsChange ={setProjects}
+            onAreaSummaryChange = {refrehsAreaSummary}
+          />
+          <AreasPanel 
+            refreshKey = {areasRefreshKey}
+            onAreasChange = {setAreas}
           />
           <div className = "mb-4">
             <p className = "text-xs font-bold tracking-[0.14em] text-primary uppercase">Quick Capture</p>

@@ -20,6 +20,15 @@ const PROJECT_PRIORITIES:  TaskPriority[] = [
     "HIGH",
 ];
 
+const areaSelect = {
+    select: {
+        id: true,
+        name: true,
+        icon: true,
+        color: true,
+    },
+} as const;
+
 function isProjectStatus(value: unknown): value is ProjectStatus {
     return (
         typeof value === "string" && PROJECT_STATUSES.includes(
@@ -58,6 +67,7 @@ export async function GET(request: Request, context: RouteContext) {
                 id,
             },
             include: {
+                area: areaSelect,
                 tasks: {
                     select:{
                         isCompleted: true,
@@ -112,7 +122,7 @@ export async function PATCH(request: Request, context: RouteContext) {
                 },
             );
         }
-        const body: unknown = await request.json();
+        const body = await request.json();
 
         if(typeof body !== "object" || body === null) {
             return NextResponse.json(
@@ -133,7 +143,63 @@ export async function PATCH(request: Request, context: RouteContext) {
             deadline?: Date | null;
             completedAt?: Date | null;
             isArchived?: boolean;
+            areaId?: string | null;
         } = {};
+
+        if("areaId" in input) {
+            if(input.areaId === null || input.areaId === "") {
+                updatedData.areaId = null;
+            } else if(typeof input.areaId !== "string") {
+                return NextResponse.json(
+                    {
+                        message: "Area project tidak valid.",
+                    },
+                    {
+                        status: 400,
+                    },
+                );
+            } else {
+                const normalizedAreaId = input.areaId.trim();
+
+                if(!normalizedAreaId) {
+                    updatedData.areaId = null;
+                } else {
+                    const selectedArea = await prisma.area.findUnique({
+                        where: {
+                            id: normalizedAreaId,
+                        },
+                        select: {
+                            id: true,
+                            isArchived: true,
+                        },
+                    });
+
+                    if(!selectedArea) {
+                        return NextResponse.json(
+                            {
+                                message: "Area tidak ditemukan.",
+                            },
+                            {
+                                status: 400,
+                            },
+                        );
+                    }
+
+                    if(selectedArea.isArchived) {
+                        return NextResponse.json(
+                            {
+                                message: "Project tidak dapat dipindahkan ke area yang diiarsipkan.",
+                            },
+                            {
+                                status: 400,
+                            },
+                        );
+                    }
+                    updatedData.areaId = selectedArea.id;
+                }
+            }
+
+        }
 
         if("name" in input) {
             if(typeof input.name !== "string") {
@@ -263,6 +329,7 @@ export async function PATCH(request: Request, context: RouteContext) {
             },
             data: updatedData,
             include: {
+                area: areaSelect,
                 tasks: {
                     select:{
                         isCompleted: true,

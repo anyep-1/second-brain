@@ -121,10 +121,28 @@ model Project {
   isArchived  Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  areaId      String?
 
+  area  Area?  @relation(fields: [areaId], references: [id], onDelete: SetNull)
   tasks Task[]
 
   @@index([status])
   @@index([deadline])
+  @@index([isArchived])
+  @@index([areaId])
+}
+
+model Area {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  icon        String   @default("Layers")
+  color       String   @default("#A84F37")
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projects Project[]
+
   @@index([isArchived])
 }

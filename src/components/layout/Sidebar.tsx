@@ -159,7 +159,8 @@ export function Sidebar({notesCount, activeView, className, onNavigate, onViewCh
                         <SidebarItem
                             label = "Areas"
                             icon = {Shapes}
-                            comingSoon
+                            href = "#areas"
+                            onNavigate = {onNavigate}
                         />
                     </div>
                 </div>

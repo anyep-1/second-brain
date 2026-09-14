@@ -7,13 +7,16 @@ import { FolderKanban } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { Button } from "../Button";
 import { ProjectCard } from "./ProjectCard";
+import { Area } from "@/types/area";
 
 type ProjectsPanelProps = {
     refreshKey: number;
     onProjectsChange: (project: Project[]) => void;
+    onAreaSummaryChange?: () => void;
+    areas?: Area[];
 }; 
 
-export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps) {
+export function ProjectsPanel({refreshKey, onProjectsChange, onAreaSummaryChange, areas = []}: ProjectsPanelProps) {
     const [projects, setProjects] = useState<Project[]>([]);
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
@@ -23,6 +26,7 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
+    const [areaId, setAreaId] = useState("");
     const [error, setError] = useState("");
 
     useEffect(() => {
@@ -64,6 +68,7 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
                 priority,
                 status: "ACTIVE",
                 deadline: deadline ? new Date(`${deadline}T12:00:00`).toISOString() : null,
+                areaId: areaId || null,
             });
 
             setProjects((current) => [
@@ -71,8 +76,11 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
                 ...current,
             ]);
 
+            onAreaSummaryChange?.();
+
             setName("");
             setDescription("");
+            setAreaId("");
             setPriority("MEDIUM");
             setDeadline("");
             setShowArchived(false);
@@ -96,10 +104,36 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
             setProjects((current) => current.map((item) =>
                 item.id === updatedProject.id ? updatedProject : item,
             ));
+
+            onAreaSummaryChange?.();
         } catch (requestError) {
             setError( requestError instanceof Error
                 ? requestError.message
                 : "Status project gagal diperbarui.",
+            );
+        } finally {
+            setBusyProjectId(null);
+        }
+    }
+
+    async function handleAreaChange(project: Project, selectedAreaId: string) {
+        setBusyProjectId(project.id);
+        setError("");
+
+        try {
+            const updatedProject = await projectService.update(project.id, {
+                areaId: selectedAreaId || null,
+            });
+
+            setProjects((current) => current.map((item) =>
+                item.id === updatedProject.id ? updatedProject : item,
+            ));
+
+            onAreaSummaryChange?.();
+        } catch (requestError) {
+            setError(requestError instanceof Error
+                ? requestError.message
+                : "Area project gagal diperbarui.",
             );
         } finally {
             setBusyProjectId(null);
@@ -116,6 +150,8 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
             setProjects((current) => current.map((item) => 
                 item.id === updatedProject.id ? updatedProject : item,
             ));
+
+            onAreaSummaryChange?.();
         } catch (requestError) {
             setError(requestError instanceof Error
                 ? requestError.message
@@ -142,6 +178,8 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
             setProjects((current) => current.filter((item) =>
                 item.id !== project.id
             ));
+
+            onAreaSummaryChange?.();
         } catch (requestError) {
             setError(requestError instanceof Error
                 ? requestError.message
@@ -200,7 +238,7 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
                 onSubmit = {handleCreateProject}
                 className = "mb-4 rounded-2xl border border-line bg-panel p-5 shadow-sm"
             >
-                <div className = "grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <div className = "grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto]">
                     <input
                         value = {name}
                         onChange = {(event) => setName(event.target.value)}
@@ -222,6 +260,21 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
                         <option value = "LOW">Prioritas rendah</option>
                         <option value = "MEDIUM">Prioritas sedang</option>
                         <option value = "HIGH">Prioritas tinggi</option>
+                    </select>
+                    <select
+                        value = {areaId}
+                        onChange = {(event) => setAreaId(event.target.value)}
+                        className = "rounded-xl border border-line bg-page/50 px-3 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-4 focus:ring-focus"
+                    >
+                        <option value = "">Tanpa area</option>
+                        {areas.filter((area) => !area.isArchived).map((area) => (
+                            <option 
+                                key = {area.id}
+                                value = {area.id}
+                            >
+                                {area.name}
+                            </option>
+                        ))}
                     </select>
                 </div>
                 <textarea
@@ -262,7 +315,9 @@ export function ProjectsPanel({refreshKey, onProjectsChange}: ProjectsPanelProps
                         <ProjectCard
                             key = {project.id}
                             project = {project}
+                            areas = {areas}
                             isBusy = {busyProjectId === project.id}
+                            onAreaChange = {handleAreaChange}
                             onStatusChange = {handleStatusChange}
                             onToggleArchive = {handleToggleArchive}
                             onDelete = {handleDelete}

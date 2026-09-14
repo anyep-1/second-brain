@@ -10,6 +10,8 @@ export type Project = {
     priority: TaskPriority;
     deadline: string | null;
     completedAt: string | null;
+    areaId: string | null;
+    area: ProjectArea | null;
     isArchived: boolean;
     totalTasks: number;
     completedTasks: number;
@@ -18,12 +20,20 @@ export type Project = {
     updatedAt: string;
 };
 
+export type ProjectArea = {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+};
+
 export type CreateProjectInput = {
     name: string;
     description?: string;
     status?: ProjectStatus;
     priority?: TaskPriority;
     deadline?: string | null;
+    areaId?: string | null;
 };
 
 export type UpdateProjectInput = {
@@ -33,5 +43,6 @@ export type UpdateProjectInput = {
     priority?: TaskPriority;
     deadline?: string | null;
     isArchived?: boolean;
+    areaId?: string | null;
 };
 

@@ -16,6 +16,15 @@ const PROJECT_PRIORITIES: TaskPriority[] = [
     "HIGH",
 ];
 
+const areaSelect = {
+    select: {
+        id: true,
+        name: true,
+        icon: true,
+        color: true,
+    },
+} as const;
+
 function isProjectStatus(value: unknown): value is ProjectStatus {
     return (
         typeof value === "string" && PROJECT_STATUSES.includes(
@@ -50,6 +59,7 @@ export async function GET() {
     try {
         const projects = await prisma.project.findMany({
             include: {
+                area: areaSelect,
                 tasks: {
                     select: {
                         isCompleted: true,
@@ -88,7 +98,58 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const body: unknown = await request.json();
+        const body = await request.json();
+
+        let areaId: string | null = null;
+
+        if(body.areaId !== undefined || body.areaId !== null || body.areaId !== ""){
+            if(typeof body.areaId !== "string"){
+                return NextResponse.json(
+                    {
+                        message: "Area project tidak valid.",
+                    },
+                    {
+                        status: 400,
+                    },
+                );
+            }
+            const normalizedAreaId = body.areaId.trim();
+
+            if(normalizedAreaId) {
+                const selectedArea = await prisma.area.findUnique({
+                    where: {
+                        id: normalizedAreaId,
+                    },
+                    select: {
+                        id: true,
+                        isArchived: true,
+                    },
+                });
+                
+                if(!selectedArea) {
+                    return NextResponse.json(
+                        {
+                            message: "Area tidak ditemukan.",
+                        },
+                        {
+                            status: 400,
+                        },
+                    );
+                }
+
+                if(selectedArea.isArchived) {
+                    return NextResponse.json(
+                        {
+                            message: "Project tidak dapat ditambah ke area yang diarsipkan.",
+                        },
+                        {
+                            status: 400,
+                        },
+                    );
+                }
+                areaId = selectedArea.id;
+            }
+        }
 
         if(typeof body !== "object" || body === null){
             return NextResponse.json(
@@ -140,6 +201,10 @@ export async function POST(request: Request) {
                 priority,
                 deadline,
                 completedAt: status === "COMPLETED" ? new Date() : null,
+                areaId,
+            },
+            include: {
+                area: areaSelect,
             },
         });
 

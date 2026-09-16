@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+#Local SQlite database
+/prisma/dev.db
+/prisma/dev.db-journal
+/prisma/dev.db-shm
+/prisma/dev.db-wal
 
 # vercel
 .vercel
@@ -46,4 +53,5 @@ next-env.d.ts
 /dev.db-shm
 /dev.db-wal
 
+# Generated Prisma Client
 /src/generated/prisma

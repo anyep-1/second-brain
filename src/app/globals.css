@@ -41,6 +41,11 @@ html {
   background: var(--sb-page);
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 1rem;
+}
+
 body {
   min-height: 100vh;
   margin: 0;

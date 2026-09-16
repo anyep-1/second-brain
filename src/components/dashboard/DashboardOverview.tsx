@@ -1,17 +1,18 @@
 import { Task } from "@/types/task";
-import { Archive, ArrowRight, Sparkles, Star, StickyNote } from "lucide-react";
+import { ArrowRight, FolderKanban, LayoutGrid, Library, LucideIcon, Sparkles, StickyNote } from "lucide-react";
 
 type DashboardOverviewProps = {
     totalNotes: number;
-    favoriteNotes: number;
-    archivedNotes: number;
+    activeProjects: number;
+    activeAreas: number;
+    totalResources: number;
     highlightedTask: Task | null;
 };
 
 type SummaryItemProps = {
     label: string;
     value: number;
-    icon: typeof StickyNote;
+    icon: LucideIcon;
 };
 
 function SummaryItem({label, value, icon: Icon}: SummaryItemProps) {
@@ -43,7 +44,7 @@ function formatTaskDate(dueDate: string | null) {
     }).format(new Date(dueDate));
 }
 
-export function DashboardOverview({totalNotes, favoriteNotes, archivedNotes, highlightedTask}: DashboardOverviewProps) {
+export function DashboardOverview({totalNotes, activeAreas, activeProjects, totalResources,  highlightedTask}: DashboardOverviewProps) {
     return (
         <section className = "mb-10 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
             <article className = "relative overflow-hidden rounded-3xl border border-line bg-soft p-6 lg:p-8">
@@ -90,21 +91,26 @@ export function DashboardOverview({totalNotes, favoriteNotes, archivedNotes, hig
                     </a>
                 </div>
             </article>
-            <div className = "grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            <div className = "grid grid-cols-2 gap-3">
                 <SummaryItem
                     label = "Total Catatan"
                     value = {totalNotes}
                     icon = {StickyNote}
                 />
                 <SummaryItem
-                    label = "Catatan Favorit"
-                    value = {favoriteNotes}
-                    icon = {Star}
+                    label = "Project Aktif"
+                    value = {activeProjects}
+                    icon = {FolderKanban}
                 />
                 <SummaryItem
-                    label = "Catatan diarsipkan"
-                    value = {archivedNotes}
-                    icon = {Archive}
+                    label = "Area Aktif"
+                    value = {activeAreas}
+                    icon = {LayoutGrid}
+                />
+                <SummaryItem
+                    label = "Resource"
+                    value = {totalResources}
+                    icon = {Library}
                 />
             </div>
         </section>

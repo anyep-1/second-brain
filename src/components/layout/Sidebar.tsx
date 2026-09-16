@@ -1,5 +1,5 @@
 import { cn } from "@/lib/cn";
-import { Archive, Brain, CheckSquare, FolderKanban, LayoutDashboard, Library, LucideIcon, Plus, Shapes, Star, StickyNote } from "lucide-react";
+import { Archive, Brain, CheckSquare, FolderKanban, LayoutDashboard, Library, LucideIcon, Shapes, Star, StickyNote } from "lucide-react";
 import Link from "next/link";
 
 export type SidebarView =
@@ -99,17 +99,53 @@ export function Sidebar({notesCount, activeView, className, onNavigate, onViewCh
             </div>
             <div className = "mt-8">
                 <p className = "px-3 text-[11px] font-bold tracking-[0.14em] text-muted uppercase">Quick Capture</p>
-                <Link
-                    href = "#quick-capture"
-                    onClick = {onNavigate}
-                    className = "mt-2 flex items-center gap-3 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover"
-                >
-                    <Plus
-                        aria-hidden = "true"
-                        className = "size-4"
-                    />
-                    Catatan Baru
-                </Link>
+                <div className = "mt-2 space-y-1">
+                    <Link
+                        href = "#tasks"
+                        onClick = {onNavigate}
+                        className = "flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-soft hover:text-ink"
+                    >
+                        <CheckSquare
+                            aria-hidden = "true"
+                            className = "size-4"
+                        />
+                        Task Baru
+                    </Link>
+                    <Link
+                        href = "#quick-capture"
+                        onClick = {onNavigate}
+                        className = "flex items-center gap-3 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover"
+                    >
+                        <StickyNote
+                            aria-hidden = "true"
+                            className = "size-4"
+                        />
+                        Catatan Baru
+                    </Link>
+                    <Link
+                        href = "#projects"
+                        onClick = {onNavigate}
+                        className = "flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-soft hover:text-ink"
+                    >
+                        <FolderKanban
+                            aria-hidden = "true"
+                            className = "size-4"
+                        />
+                        Project Baru
+                    </Link>
+                    <Link
+                        href = "#resources"
+                        onClick = {onNavigate}
+                        className = "flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-soft hover:text-ink"
+                    >
+                        <StickyNote
+                            aria-hidden = "true"
+                            className = "size-4"
+                        />
+                        Resource Baru
+                    </Link>
+                </div>
+                
             </div>
             <nav className = "mt-8 space-y-7">
                 <div>
@@ -170,7 +206,8 @@ export function Sidebar({notesCount, activeView, className, onNavigate, onViewCh
                         <SidebarItem
                             label = "Resources"
                             icon = {Library}
-                            comingSoon
+                            href = "#resources"
+                            onNavigate = {onNavigate}
                         />
                     </div>
                 </div>

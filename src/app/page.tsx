@@ -16,6 +16,8 @@ import { ProjectsPanel } from "@/components/projects/ProjectsPanel";
 import { Project } from "@/types/project";
 import { AreasPanel } from "@/components/areas/AreasPanel";
 import { Area } from "@/types/area";
+import { ResourcesPanel } from "@/components/resources/ResourcesPanel";
+import { Resource } from "@/types/resource";
 
 
 export default function Home() {
@@ -29,6 +31,7 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -63,9 +66,6 @@ export default function Home() {
 
     return matchesView && matchesSearch;
   });
-
-  const favoriteNotesCount = notes.filter((note) => note.isFavorite,).length;
-  const archivedNotesCount = notes.filter((note) => note.isArchived,).length
 
   async function handleViewChange(view: SidebarView) {
     setActiveView(view);
@@ -183,8 +183,9 @@ export default function Home() {
           </header>
           <DashboardOverview
             totalNotes = {notes.length}
-            favoriteNotes = {favoriteNotesCount}
-            archivedNotes = {archivedNotesCount}
+            activeProjects = {projects.filter((project) => !project.isArchived).length}
+            activeAreas = {areas.filter((area) => !area.isArchived).length}
+            totalResources = {resources.filter((resource) => !resource.isArchived).length}
             highlightedTask= {highlightedTask}
           />
           <TasksPanel
@@ -201,6 +202,10 @@ export default function Home() {
           <AreasPanel 
             refreshKey = {areasRefreshKey}
             onAreasChange = {setAreas}
+          />
+          <ResourcesPanel
+            areas = {areas}
+            onResourcesChange = {setResources}
           />
           <div className = "mb-4">
             <p className = "text-xs font-bold tracking-[0.14em] text-primary uppercase">Quick Capture</p>

@@ -142,7 +142,30 @@ model Area {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  projects Project[]
+  projects  Project[]
+  resources Resource[]
 
   @@index([isArchived])
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  url         String   @default("")
+  type        String   @default("ARTICLE")
+  status      String   @default("TO_RIVIEW")
+  isFavorit   Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  areaId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  area Area? @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([status])
+  @@index([isFavorit])
+  @@index([isArchived])
+  @@index([areaId])
 }
